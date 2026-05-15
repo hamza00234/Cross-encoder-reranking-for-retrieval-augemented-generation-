@@ -1,0 +1,24 @@
+
+2 Files
+Undo All
+Review
+
+
+Plan, Build, / for commands, @ for context
+Agent
+￼
+Auto
+
+.env
+hotpotqa_summary.json
+results
+hotpotqa_summary.json
+…
+￼1234567891011121314151617181920212223242526272829303132333435
+{  "standard_rag": {    "condition": "standard_rag",    "display_name": "Standard RAG (dense top-k from pool head)",    "group": "baseline",    "dataset": "hotpotqa",    "n_samples": 100,    "top_k": 5,    "timestamp": "2026-05-03T04:13:14.403133+00:00",    "retrieval_metrics": {      "recall@5": 0.71,      "recall@10": 0.71,      "precision@5": 0.284,      "mrr": 0.8658    },    "generation_metrics": {      "answer_faithfulness": 0.0,      "answer_relevance": 0.0    },    "latency_stats": {      "mean_ms": 9864.7,      "p95_ms": 15701.7,      "throughput_qps": 0.101    }  },  "large_pool": {    "condition": "large_pool",    "display_name": "Large-pool RAG (cosine over full pool, top-k)",    "group": "baseline",    "dataset": "hotpotqa",    "n_samples": 100,    "top_k": 5,    "timestamp": "2026-05-03T04:57:48.311300+00:00",    "retrieval_metrics": {      "recall@5": 0.71,
+Problems
+Output
+Debug Console
+Terminal
+Ports
+zsh

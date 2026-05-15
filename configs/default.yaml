@@ -1,0 +1,45 @@
+ingestion:
+  chunk_size: 512
+  chunk_overlap: 64
+  embedding_model: "sentence-transformers/all-mpnet-base-v2"
+  embedding_dim: 768
+  faiss_index_type: "flat"
+  faiss_index_path: "indexes/faiss/corpus.index"
+  metadata_path: "indexes/faiss/metadata.pkl"
+
+retrieval:
+  candidate_pool_size: 25
+  final_top_k: 5
+  final_top_k_secondary: 10
+  cross_encoder_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+hybrid:
+  enabled: true
+  alpha: 0.3
+
+generation:
+  backend: "openrouter"
+  model: "nvidia/nemotron-3-super-120b-a12b:free"
+  fallback_model: "openai/gpt-oss-120b:free"
+  temperature: 0.0
+  openrouter_base_url: "https://openrouter.ai/api/v1"
+
+evaluation:
+  # LLM + local embeddings for RAGAS (faithfulness, answer_relevancy).
+  # ``model`` defaults to generation.model if omitted; set a smaller OpenRouter id to save cost.
+  ragas:
+    model: "openai/gpt-4o-mini"
+    embedding_model: "sentence-transformers/all-mpnet-base-v2"
+  datasets:
+    hotpotqa:
+      split: "validation"
+      n_samples: 500
+      setting: "distractor"
+    musique:
+      split: "validation"
+      n_samples: 200
+  metrics:
+    retrieval: ["recall@5", "recall@10", "precision@5", "mrr"]
+    generation: ["answer_faithfulness", "answer_relevance"]
+  significance_level: 0.05
+  results_dir: "results/"
