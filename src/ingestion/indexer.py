@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import os
-import pickle
+from pathlib import Path
 
 import faiss
 import numpy as np
@@ -10,6 +11,7 @@ import numpy as np
 class FAISSIndexer:
     """
     Builds and persists a FAISS index over chunk embeddings.
+    Metadata is stored as JSON (not pickle) to avoid arbitrary-code execution on load.
     """
 
     def __init__(
@@ -47,16 +49,16 @@ class FAISSIndexer:
             if self.index is None:
                 raise ValueError("Index is not built")
             faiss.write_index(self.index, self.index_path)
-            with open(self.metadata_path, "wb") as f:
-                pickle.dump(self.metadata, f)
+            json_path = self._metadata_json_path()
+            json_path.parent.mkdir(parents=True, exist_ok=True)
+            json_path.write_text(json.dumps(self.metadata, ensure_ascii=False), encoding="utf-8")
         except Exception as exc:
             raise RuntimeError(f"Failed to save FAISS index or metadata: {exc}") from exc
 
     def load(self) -> None:
         try:
             self.index = faiss.read_index(self.index_path)
-            with open(self.metadata_path, "rb") as f:
-                self.metadata = pickle.load(f)
+            self.metadata = self._load_metadata()
         except Exception as exc:
             raise RuntimeError(f"Failed to load FAISS index or metadata: {exc}") from exc
 
@@ -73,3 +75,24 @@ class FAISSIndexer:
             row["cosine_score"] = float(score)
             results.append(row)
         return results
+
+    def _metadata_json_path(self) -> Path:
+        path = Path(self.metadata_path)
+        if path.suffix == ".pkl":
+            return path.with_suffix(".json")
+        return path
+
+    def _load_metadata(self) -> list[dict]:
+        json_path = self._metadata_json_path()
+        if json_path.is_file():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            if not isinstance(data, list):
+                raise ValueError(f"Metadata JSON must be a list, got {type(data).__name__}")
+            return data
+        pkl_path = Path(self.metadata_path)
+        if pkl_path.suffix == ".pkl" and pkl_path.is_file():
+            raise RuntimeError(
+                f"Refusing to load pickle metadata at {pkl_path} (insecure). "
+                "Rebuild the index so metadata is written as JSON."
+            )
+        raise FileNotFoundError(f"Metadata file not found: {json_path}")

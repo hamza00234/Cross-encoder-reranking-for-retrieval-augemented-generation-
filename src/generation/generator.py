@@ -6,6 +6,7 @@ from typing import Any, Protocol
 import ollama
 from openai import OpenAI
 
+from src.env import env_value
 from src.openrouter_key import resolve_openrouter_api_key
 
 
@@ -155,8 +156,8 @@ def build_answer_generator(gen: dict[str, Any]) -> AnswerGenerator:
         api_key = resolve_openrouter_api_key(env_name)
         if not api_key:
             raise RuntimeError(
-                f"generation.backend is openrouter but {env_name} is not set "
-                f"(and no fallback in src/openrouter_dev_key.py)."
+                f"generation.backend is openrouter but no API key was found. "
+                f"Set {env_name} (or OPENROUTER_API_KEY / OPENAI_API_KEY) in your .env file."
             )
         return OpenRouterGenerator(
             model=gen["model"],
@@ -171,6 +172,6 @@ def build_answer_generator(gen: dict[str, Any]) -> AnswerGenerator:
         )
     return OllamaGenerator(
         model=gen["model"],
-        base_url=gen["ollama_base_url"],
+        base_url=env_value("OLLAMA_BASE_URL") or gen.get("ollama_base_url") or "http://localhost:11434",
         temperature=float(gen.get("temperature", 0.0)),
     )

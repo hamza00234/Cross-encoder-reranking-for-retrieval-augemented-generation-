@@ -104,7 +104,7 @@ def _runtime_config_for_dataset(base_config: str, dataset_name: str, output_dir:
     idx_dir = Path(output_dir) / "indexes" / dataset_name
     idx_dir.mkdir(parents=True, exist_ok=True)
     cfg["ingestion"]["faiss_index_path"] = str(idx_dir / "corpus.index")
-    cfg["ingestion"]["metadata_path"] = str(idx_dir / "metadata.pkl")
+    cfg["ingestion"]["metadata_path"] = str(idx_dir / "metadata.json")
     out = Path(output_dir) / f".runtime_{dataset_name}.yaml"
     with open(out, "w", encoding="utf-8") as f:
         yaml.safe_dump(cfg, f)

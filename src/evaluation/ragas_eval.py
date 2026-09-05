@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from datasets import Dataset
@@ -9,6 +8,7 @@ from ragas.embeddings import HuggingfaceEmbeddings
 from ragas.metrics import answer_relevancy, faithfulness
 from ragas.run_config import RunConfig
 
+from src.env import env_value
 from src.openrouter_key import resolve_openrouter_api_key
 
 # Align with ingestion default; override via evaluation.ragas.embedding_model in YAML.
@@ -26,13 +26,7 @@ def _merged_generation(generation: dict[str, Any] | None, ragas: dict[str, Any] 
 
 
 def _openrouter_judge_api_key(gen: dict[str, Any]) -> str:
-    """
-    OpenRouter accepts OpenAI-compatible clients. Prefer OPENAI_API_KEY (common when
-    the same secret is used for ChatOpenAI + OpenRouter base URL), then OPENROUTER_API_KEY.
-    """
-    key = (os.environ.get("OPENAI_API_KEY") or "").strip()
-    if key:
-        return key
+    """Resolve an OpenAI-compatible key from ``.env`` / the process environment."""
     env_name = str(gen.get("api_key_env", "OPENROUTER_API_KEY"))
     return resolve_openrouter_api_key(env_name)
 
@@ -42,7 +36,7 @@ def _build_ragas_llm(gen: dict[str, Any], timeout_sec: float) -> Any:
     if not backend:
         if _openrouter_judge_api_key({}):
             backend = "openrouter"
-        elif os.environ.get("OPENAI_API_KEY"):
+        elif env_value("OPENAI_API_KEY"):
             backend = "openai"
         else:
             backend = "ollama"
@@ -53,9 +47,7 @@ def _build_ragas_llm(gen: dict[str, Any], timeout_sec: float) -> Any:
         api_key = _openrouter_judge_api_key(gen)
         if not api_key:
             raise RuntimeError(
-                "RAGAS OpenRouter judge: set OPENAI_API_KEY to your OpenRouter API key "
-                "(OpenAI-compatible client with base_url https://openrouter.ai/api/v1), "
-                "or set OPENROUTER_API_KEY / use src/openrouter_dev_key.py for local dev."
+                "RAGAS OpenRouter judge: set OPENROUTER_API_KEY (or OPENAI_API_KEY) in your .env file."
             )
         from langchain_openai import ChatOpenAI
 
@@ -81,11 +73,11 @@ def _build_ragas_llm(gen: dict[str, Any], timeout_sec: float) -> Any:
         return ChatOpenAI(**kwargs)
 
     if backend == "openai":
-        api_key = (os.environ.get("OPENAI_API_KEY") or "").strip()
+        api_key = env_value("OPENAI_API_KEY", "OPENROUTER_API_KEY")
         if not api_key:
             raise RuntimeError(
-                "RAGAS needs OPENAI_API_KEY when generation.backend is openai "
-                "or no backend/env could be inferred."
+                "RAGAS needs OPENAI_API_KEY (or OPENROUTER_API_KEY) in your .env file "
+                "when generation.backend is openai."
             )
         from langchain_openai import ChatOpenAI
 
@@ -95,7 +87,7 @@ def _build_ragas_llm(gen: dict[str, Any], timeout_sec: float) -> Any:
     from langchain_community.chat_models import ChatOllama
 
     model = str(gen.get("model", "mistral:7b-instruct"))
-    base_url = str(gen.get("ollama_base_url", "http://localhost:11434"))
+    base_url = env_value("OLLAMA_BASE_URL") or str(gen.get("ollama_base_url", "http://localhost:11434"))
     return ChatOllama(model=model, base_url=base_url, temperature=0.0)
 
 
@@ -108,8 +100,8 @@ class RAGASEvaluator:
     """
     RAGAS faithfulness + answer_relevancy.
 
-    LLM: OpenRouter when ``generation.backend`` is openrouter (``OPENAI_API_KEY`` or
-    ``OPENROUTER_API_KEY``). Embeddings: local sentence-transformers (no API calls).
+    LLM: OpenRouter when ``generation.backend`` is openrouter (keys from ``.env``).
+    Embeddings: local sentence-transformers (no API calls).
     """
 
     def __init__(

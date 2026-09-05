@@ -5,7 +5,7 @@ ingestion:
   embedding_dim: 768
   faiss_index_type: "flat"
   faiss_index_path: "indexes/faiss/corpus.index"
-  metadata_path: "indexes/faiss/metadata.pkl"
+  metadata_path: "indexes/faiss/metadata.json"
 
 retrieval:
   candidate_pool_size: 25
@@ -19,10 +19,12 @@ hybrid:
 
 generation:
   backend: "openrouter"
+  api_key_env: "OPENROUTER_API_KEY"
   model: "nvidia/nemotron-3-super-120b-a12b:free"
   fallback_model: "openai/gpt-oss-120b:free"
   temperature: 0.0
   openrouter_base_url: "https://openrouter.ai/api/v1"
+  # ollama_base_url: "http://localhost:11434"  # used when backend is ollama; override via OLLAMA_BASE_URL
 
 evaluation:
   # LLM + local embeddings for RAGAS (faithfulness, answer_relevancy).

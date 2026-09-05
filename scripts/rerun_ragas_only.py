@@ -2,11 +2,10 @@
 """
 Recompute RAGAS (faithfulness + answer_relevancy) from saved per-query JSON only.
 
-Does not run retrieval or answer generation. Requires OPENAI_API_KEY set to your
-OpenRouter key (OpenAI-compatible client + https://openrouter.ai/api/v1).
+Does not run retrieval or answer generation. Requires OPENROUTER_API_KEY
+(or OPENAI_API_KEY) in ``.env`` or the environment.
 
 Usage:
-  export OPENAI_API_KEY=sk-or-v1-...
   python scripts/rerun_ragas_only.py --conditions standard_rag large_pool llm_listwise --dataset hotpotqa
 """
 
@@ -14,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import sys
 import time
@@ -26,6 +24,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.env import load_project_env  # noqa: E402
+from src.openrouter_key import resolve_openrouter_api_key  # noqa: E402
 from run_all_experiments import (  # noqa: E402
     CONDITION_IDS,
     build_comparison_payload,
@@ -34,14 +34,14 @@ from run_all_experiments import (  # noqa: E402
 )
 from src.evaluation.ragas_eval import RAGASEvaluator  # noqa: E402
 
+load_project_env()
+
 
 def _require_openai_key_for_openrouter() -> None:
-    if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+    if not resolve_openrouter_api_key():
         raise SystemExit(
-            "OPENAI_API_KEY is not set.\n"
-            "Set it to your OpenRouter API key (OpenRouter accepts OpenAI-compatible clients):\n"
-            "  export OPENAI_API_KEY='sk-or-v1-...'\n"
-            "Then re-run this script."
+            "No API key found.\n"
+            "Set OPENROUTER_API_KEY (or OPENAI_API_KEY) in your .env file, then re-run."
         )
 
 

@@ -36,7 +36,11 @@ Answer + metrics (retrieval + RAGAS)
    ```bash
    pip install -r requirements.txt
    ```
-3. **Generation:** the default config uses [OpenRouter](https://openrouter.ai) (`OPENROUTER_API_KEY` in the environment; models under `generation` in `configs/default.yaml`). For local [Ollama](https://ollama.com) instead, set `generation.backend` to `ollama`, add `ollama_base_url`, and pull models (for example `mistral:7b-instruct` / `llama3:8b-instruct`).
+3. Copy the env template and add your keys (never commit `.env`):
+   ```bash
+   cp .env.example .env
+   ```
+   Set `OPENROUTER_API_KEY` for the default [OpenRouter](https://openrouter.ai) backend. Models live under `generation` in `configs/default.yaml`. For local [Ollama](https://ollama.com) instead, set `generation.backend` to `ollama` and optionally `OLLAMA_BASE_URL`, then pull models (for example `mistral:7b-instruct` / `llama3:8b-instruct`).
 
 ## Build Index From Custom Corpus
 
@@ -94,5 +98,5 @@ Structure:
 ## Known Limitations
 
 - Cross-encoder reranking over 25 candidates can be latency-heavy.
-- RAGAS evaluation depends on judge availability (OpenAI-compatible API key or local-compatible judge setup).
+- RAGAS evaluation depends on judge availability (`OPENROUTER_API_KEY` / `OPENAI_API_KEY` in `.env`, or a local Ollama judge).
 - Gold chunk mapping is an approximation when support facts are title/paragraph-level but chunking creates multiple chunks.

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import time
-from pathlib import Path
 from typing import Any
 
 import yaml
 from datasets import load_dataset
-from dotenv import load_dotenv
 from tqdm import tqdm
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-
+from src.env import load_project_env, resolve_project_path
 from src.generation.generator import AnswerGenerator, build_answer_generator
 from src.ingestion.chunker import DocumentChunker
 from src.ingestion.embedder import ChunkEmbedder
@@ -127,6 +124,7 @@ class RAGPipeline:
     """
 
     def __init__(self, config_path: str) -> None:
+        load_project_env()
         with open(config_path, "r", encoding="utf-8") as f:
             self.config: dict[str, Any] = yaml.safe_load(f)
 
@@ -135,13 +133,18 @@ class RAGPipeline:
         gen = self.config["generation"]
         hyb = self.config["hybrid"]
 
+        index_path = str(resolve_project_path(ing["faiss_index_path"]))
+        metadata_path = str(resolve_project_path(ing["metadata_path"]))
+        ing["faiss_index_path"] = index_path
+        ing["metadata_path"] = metadata_path
+
         self.chunker = DocumentChunker(ing["chunk_size"], ing["chunk_overlap"])
         self.embedder = ChunkEmbedder(model_name=ing["embedding_model"])
         self.indexer = FAISSIndexer(
             index_type=ing["faiss_index_type"],
             embedding_dim=ing["embedding_dim"],
-            index_path=ing["faiss_index_path"],
-            metadata_path=ing["metadata_path"],
+            index_path=index_path,
+            metadata_path=metadata_path,
         )
         self.retriever = DenseRetriever(
             embedder=self.embedder,
